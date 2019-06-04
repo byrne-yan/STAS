@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block header %}
+  <h1>{% block title %}Stocks{% endblock %}</h1>
+
+{% endblock %}
+
+{% block content %}
+  <table class="stocks">
+  {% for stock in stocks.iterrows() %}
+     <tr class="stock">
+		<th>{{ stock[1]['symbol'] }}</th>
+		<th>{{ stock[1]['name'] }}</th>
+		<th>{{ stock[1]['area'] }}</th>
+		<th>{{ stock[1]['industry'] }}</th>
+		<th>{{ stock[1]['market'] }}</th>
+    </tr>
+    {% if not loop.last %}
+    {% endif %}
+  {% endfor %}
+  </table>
+{% endblock %}
