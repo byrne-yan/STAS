@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+
+{% block header %}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <h1>{% block title %}Stock Quote - {{ code }}{% endblock %}</h1>
+
+{% endblock %}
+
+
+{% block content %}
+  <div id="container" class="container">
+    <canvas id="myChart" style="width: 800px; height: 600px; "></canvas>
+	<canvas id="cursorChart" style="width: 800px; height: 600px; "></canvas>
+  </div>
+  <script src="../static/jquery.js"></script>
+  <script src="../static/ClChart.js"></script>
+
+  <script>
+	// 获取浏览器内核版本
+	function getBrowserVersion() {
+		const ua = navigator.userAgent;
+		return {
+			trident: ua.indexOf('Trident') > -1, // IE内核
+			presto: ua.indexOf('Presto') > -1, // opera内核
+			webKit: ua.indexOf('AppleWebKit') > -1, // 苹果、谷歌内核
+			gecko: ua.indexOf('Gecko') > -1 && ua.indexOf('KHTML') === -1, // 火狐内核
+			mobile: !!ua.match(/AppleWebKit.*Mobile.*/), // 是否为移动终端
+			ios: !!ua.match(/\(i[^;]+;( U;)? CPU.+Mac OS X/), // ios终端
+			android: ua.indexOf('Android') > -1, // android终端
+			iPad: ua.indexOf('iPad') > -1, // 是否iPad
+			uc: ua.indexOf('UCBrowser') > -1, // 是否UC浏览器
+			qq: ua.indexOf('MQQBrowser') > -1, // 是否QQ浏览器
+			weixin: ua.indexOf('MicroMessenger') > -1 // 是否微信
+		}
+	}  
+//    const container = document.getElementById('container')
+//    const  mainCanvas ={
+//      width: container.offsetWidth * window.devicePixelRatio,
+//      height: container.offsetHeight * window.devicePixelRatio,
+//    }
+
+	const canvas = document.getElementById('myChart')
+	const ctx = canvas.getContext('2d')
+	const cursorCanvas = document.getElementById('cursorChart')
+	const cursorCtx = cursorCanvas.getContext('2d')	
+    const syscfg = {
+      scale: window.devicePixelRatio,
+      axisPlatform: getBrowserVersion().mobile ? 'phone' : 'web',
+      mainCanvas:{
+		canvas:canvas,
+		context:ctx
+	  },
+	  cursorCanvas:{
+		canvas:cursorCanvas,
+		context:cursorCtx
+	  }
+    }
+
+    // Create a single stock Chart instance
+    const Chart = ClChart.createSingleChart(syscfg)
+	
+    let isInited = false;
+    function initLayout() {
+      if (isInited) return; 
+      isInited = true;
+      Chart.clear();
+      let mainHeight = canvas.height 
+      const mainLayoutCfg = {
+        layout: {
+          offset: {
+            left: 5,
+            right: 10
+          }
+        },
+        //buttons: ClChart.DEF_CHART.CHART_BUTTONS,
+        config: ClChart.DEF_CHART.CHART_KBAR,
+        rectMain: {
+          left: 0,
+          top: 0,
+          width: canvas.width,
+          height: mainHeight
+        }
+      }
+      Chart.createChart('user.kbar', 'CHART.LINE', mainLayoutCfg, function (result) {
+          console.log(result)
+      })
+
+      const volumeLayoutCfg = {
+        layout: {
+          offset: {
+            left: 5,
+            right: 10
+          }
+        },
+        config: ClChart.DEF_CHART.CHART_VBAR,
+        rectMain: {
+          left: 0,
+          top: mainHeight,
+          width: cursorCanvas.width,
+          height: cursorCanvas.height - mainHeight
+        }
+      }
+      //Chart.createChart('user.vbar', 'CHART.LINE', volumeLayoutCfg, function (result) {
+      //    console.log(result)
+      //})
+	  Chart.initData()
+    }
+	ts_fields =  {
+	  time: 1,
+	  open: 2,
+	  high: 3,
+	  low: 4,
+	  close: 5,
+	  vol: 9,
+	  money: 10
+	}
+    function paintDrawline(scode) {
+		$.ajax({
+			type: "GET",
+            url: "data",
+			data: {code:'000001.SZ'},
+			dataType:"json",
+			success: function(data){
+				console.log(data)
+				Chart.setData('INFO', 
+				{
+				  //marker: 0,
+				  code: 0,
+				  //name: 1, // 股票名称
+				  //search: 3,
+				  //type: 4, // 股票类型
+				  coinunit: 2, // 保留小数点
+				  //volunit: 6, // 成交量单位
+				  before: 1, // 前收盘
+				  //stophigh: 8, // 涨停价
+				  //stoplow: 9 // 跌停价
+				},
+				['000001.SZ',0,2])
+				Chart.setData('DAY', 
+				{
+				  time: 1,
+				  open: 2,
+				  high: 3,
+				  low: 4,
+				  close: 5,
+				  vol: 9,
+				  money: 10
+				}, 
+				data)
+
+				//Chart.bindData(Chart.getChart('user.kbar'), 'INFO')
+				Chart.bindData(Chart.getChart('user.kbar'), 'DAY')
+				//Chart.bindData(Chart.getChart('user.vbar'), 'DAY')
+				Chart.onPaint()
+			}
+		}); 
+    }
+      
+    window.onload = () => {
+      initLayout()
+      paintDrawline()
+    }
+  </script>
+{% endblock %}
