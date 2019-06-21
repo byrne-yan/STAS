@@ -6,10 +6,14 @@
 {% endblock %}
 
 {% block content %}
+  {% for idx in index.iterrows() %}
+  <a href=quote?code={{ idx[1]['ts_code']}}&index=1>{{ idx[1]['name'] }}</a><br/>
+  {% endfor %}
+
   <table class="stocks">
   {% for stock in stocks.iterrows() %}
      <tr class="stock">
-		<th>{{ stock[1]['symbol'] }}</th>
+		<th><a href=quote?code={{ stock[1]['ts_code']}}>{{ stock[1]['symbol'] }}</a></th>
 		<th>{{ stock[1]['name'] }}</th>
 		<th>{{ stock[1]['area'] }}</th>
 		<th>{{ stock[1]['industry'] }}</th>
