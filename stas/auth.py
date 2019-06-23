@@ -7,6 +7,7 @@ from flask import (
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from stas.db import get_db,insert_user_into_db
+from bson.objectid import ObjectId
 
 bp = Blueprint('auth',__name__,url_prefix='/auth')
 
@@ -37,18 +38,19 @@ def login():
 		password = request.form['password']
 		db = get_db()
 		error = None
-		user = db.execute(
-			'SELECT * FROM user WHERE username = ?', (username,)
-		).fetchone()
 		
+		# user = db.execute(
+			# 'SELECT * FROM user WHERE username = ?', (username,)
+		# ).fetchone()
+		user = db.users.find_one({'user':username})
 		if user is None:
 			error = 'Incorrect username.'
-		elif not check_password_hash(user['password'],password):
+		elif not check_password_hash(user['pwd'],password):
 			error = 'Incorrect password.'
 			
 		if error is None:
 			session.clear()
-			session['user_id'] = user['id']
+			session['user_id'] = str(user['_id'])
 			return redirect(url_for('stock.index'))
 		
 		flash(error)
@@ -57,13 +59,16 @@ def login():
 @bp.before_app_request
 def load_logged_in_user():
 	user_id = session.get('user_id')
+	# print('userid:{}'.format(user_id))
 	
 	if user_id is None:
 		g.user = None
 	else:
-		g.user = get_db().execute(
-			'SELECT * FROM user WHERE id = ?', (user_id,)
-		).fetchone()
+		# g.user = get_db().execute(
+			# 'SELECT * FROM user WHERE id = ?', (user_id,)
+		# ).fetchone()
+		g.user = get_db().users.find_one({'_id':ObjectId(user_id)})
+		# print('session:{}'.format(g.user))
 		
 @bp.route('/logout')
 def logout():
